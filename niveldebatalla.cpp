@@ -7,8 +7,8 @@ NivelDeBatalla::NivelDeBatalla(double tiempoInicial, GermanQuintero* jugador)
 
 NivelDeBatalla::~NivelDeBatalla() {
     // Libera la memoria dinamica de las armas activas
-    for (Armas* arma : m_armas) {
-        delete arma;
+    for (Armas* armas : m_armas) {
+        delete armas;
     }
     m_armas.clear();
 
@@ -49,9 +49,9 @@ std::vector<ElementoDeBatalla*> NivelDeBatalla::elementos() const {
     }
 
     // Anade todas las armas activas
-    for (Armas* arma : m_armas) {
-        if (arma != nullptr && arma->estaActivo()) {
-            listaActiva.push_back(arma);
+    for (Armas* armas: m_armas) {
+        if (armas != nullptr && armas->estaActivo()) {
+            listaActiva.push_back(armas);
         }
     }
 
