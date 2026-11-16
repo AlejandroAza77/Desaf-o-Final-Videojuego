@@ -25,6 +25,9 @@ public:
     // Destructor virtual para liberar toda la memoria dinamica
     virtual ~NivelDeBatalla();
 
+    // Sobrecarga del operador de asignacion con copia profunda
+    NivelDeBatalla& operator=(const NivelDeBatalla& otro);
+
     virtual void actualizar(double dt) = 0;
     virtual bool victoria() const = 0;
     virtual bool derrota() const; // Se acaba el tiempo o muere German

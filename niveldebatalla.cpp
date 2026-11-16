@@ -25,6 +25,45 @@ NivelDeBatalla::~NivelDeBatalla() {
     }
 }
 
+// Sobrecarga del operador de asignacion con copia profunda
+NivelDeBatalla& NivelDeBatalla::operator=(const NivelDeBatalla& otro) {
+    if (this != &otro) {
+        m_tiempoRestante = otro.m_tiempoRestante;
+
+        // Copiar el jugador de forma segura
+        if (m_jugador != nullptr) {
+            delete m_jugador;
+            m_jugador = nullptr;
+        }
+        if (otro.m_jugador != nullptr) {
+            m_jugador = new GermanQuintero(*otro.m_jugador);
+        }
+
+        // Limpiar y clonar las armas
+        for (Armas* armas : m_armas) {
+            delete armas;
+        }
+        m_armas.clear();
+        for (Armas* armas : otro.m_armas) {
+            if (armas != nullptr) {
+                m_armas.push_back(new Armas(*armas));
+            }
+        }
+
+        // Limpiar y clonar los objetos del escenario
+        for (ObjetoDelEscenario* obj : m_objetosEscenario) {
+            delete obj;
+        }
+        m_objetosEscenario.clear();
+        for (ObjetoDelEscenario* obj : otro.m_objetosEscenario) {
+            if (obj != nullptr) {
+                m_objetosEscenario.push_back(new ObjetoDelEscenario(*obj));
+            }
+        }
+    }
+    return *this;
+}
+
 bool NivelDeBatalla::derrota() const {
     // Derrota si el tiempo llega a cero o si el jugador ya no esta activo (muerto)
     if (m_tiempoRestante <= 0.0) {
