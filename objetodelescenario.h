@@ -32,6 +32,9 @@ public:
     // Destructor virtual por defecto
     virtual ~ObjetoDelEscenario() = default;
 
+    // Sobrecarga del operador de asignacion
+    ObjetoDelEscenario& operator=(const ObjetoDelEscenario& otro);
+
     // Sobrescritura de metodos virtuales de ElementoDeBatalla
     void actualizar(double dt) override;
     QString rutaSprite() const override;
