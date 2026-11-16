@@ -7,7 +7,7 @@
 
 // Declaraciones adelantadas para evitar dependencias circulares
 class GermanQuintero;
-class Arma;
+class Armas;
 class ObjetoDelEscenario;
 
 //Clase abstracta NivelDeBatalla
@@ -16,7 +16,7 @@ class NivelDeBatalla {
 protected:
     double m_tiempoRestante;
     GermanQuintero* m_jugador;
-    std::list<Arma*> m_armas;
+    std::list<Armas*> m_armas;
     std::vector<ObjetoDelEscenario*> m_objetosEscenario;
 
 public:
@@ -35,7 +35,7 @@ public:
     std::vector<ElementoDeBatalla*> elementos() const;
 
     GermanQuintero* jugador() const;
-    void agregarArma(Arma* nuevaArma);
+    void agregarArma(Armas* nuevaArma);
     void agregarObjetoEscenario(ObjetoDelEscenario* nuevoObjeto);
 };
 
