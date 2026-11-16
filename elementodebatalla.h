@@ -20,6 +20,9 @@ public:
     // Destructor virtual para garantizar la correcta liberacion de memoria en clases derivadas
     virtual ~ElementoDeBatalla() = default;
 
+    // Sobrecarga del operador de asignacion
+    ElementoDeBatalla& operator=(const ElementoDeBatalla& otro);
+
     // Firmas fijas solicitadas por la arquitectura
     virtual void actualizar(double dt) = 0;
     virtual QString rutaSprite() const = 0; // Daniel la usa para cargar el sprite correspondiente en la GUI

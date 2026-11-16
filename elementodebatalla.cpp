@@ -3,6 +3,18 @@
 ElementoDeBatalla::ElementoDeBatalla(QPointF pos, QPointF vel, QPointF tam, double vida)
     : m_posicion(pos), m_velocidad(vel), m_tamano(tam), m_integridad(vida), m_activo(true) {}
 
+// Sobrecarga del operador de asignacion
+ElementoDeBatalla& ElementoDeBatalla::operator=(const ElementoDeBatalla& otro) {
+    if (this != &otro) {
+        m_posicion = otro.m_posicion;
+        m_velocidad = otro.m_velocidad;
+        m_tamano = otro.m_tamano;
+        m_integridad = otro.m_integridad;
+        m_activo = otro.m_activo;
+    }
+    return *this;
+}
+
 QPointF ElementoDeBatalla::posicion() const {
     return m_posicion;
 }
