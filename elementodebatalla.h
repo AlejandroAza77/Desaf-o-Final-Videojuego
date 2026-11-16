@@ -5,17 +5,12 @@
 #include <QRectF>
 #include <QString>
 
-/*
- * Clase abstracta ElementoDeBatalla
- * Base de todo lo que se mueve en pantalla.
- * Guarda: posicion, velocidad, tamano, integridad (vida) y si esta activo.
- */
 class ElementoDeBatalla {
 protected:
     QPointF m_posicion;    // Posicion actual en coordenadas del mundo (x, y)
     QPointF m_velocidad;   // Vector de velocidad (vx, vy)
-    QPointF m_tamano;      // Ancho y alto para calcular los limites de colision
-    double m_integridad;   // Vida o resistencia restante del elemento
+    QPointF m_tamano;
+    double m_integridad;
     bool m_activo;         // Bandera para saber si sigue activo en el juego o debe eliminarse
 
 public:

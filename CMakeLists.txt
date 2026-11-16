@@ -13,10 +13,20 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 set(PROJECT_SOURCES
-        main.cpp
+feature/elemento-de-batalla
+    main.cpp
         mainwindow.cpp
         mainwindow.h
         mainwindow.ui
+        armas.h
+        armas.cpp
+        elementodebatalla.h
+        elementodebatalla.cpp
+        niveldebatalla.h
+        niveldebatalla.cpp
+        objetodelescenario.h
+        objetodelescenario.cpp
+
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
