@@ -29,6 +29,22 @@ ObjetoDelEscenario::ObjetoDelEscenario(QPointF posBase, TipoObjeto tipo, double 
     }
 }
 
+// Sobrecarga del operador de asignacion
+ObjetoDelEscenario& ObjetoDelEscenario::operator=(const ObjetoDelEscenario& otro) {
+    if (this != &otro) {
+        ElementoDeBatalla::operator=(otro); // Asignar la parte heredada
+        m_tipoObjeto = otro.m_tipoObjeto;
+        m_recogible = otro.m_recogible;
+        m_amplitud = otro.m_amplitud;
+        m_frecuencia = otro.m_frecuencia;
+        m_fase = otro.m_fase;
+        m_longitudCuerda = otro.m_longitudCuerda;
+        m_posicionBase = otro.m_posicionBase;
+        m_tiempoAcumulado = otro.m_tiempoAcumulado;
+    }
+    return *this;
+}
+
 void ObjetoDelEscenario::actualizar(double dt) {
     if (!estaActivo()) return;
 
