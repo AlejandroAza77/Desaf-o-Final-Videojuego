@@ -27,6 +27,9 @@ public:
     // Destructor virtual por defecto
     virtual ~Armas() = default;
 
+    // Sobrecarga del operador de asignacion
+    Armas& operator=(const Armas& otro);
+
     // Sobrescritura de metodos virtuales de elementodebatalla
     void actualizar(double dt) override;
     QString rutaSprite() const override;
