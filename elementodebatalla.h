@@ -4,44 +4,48 @@
 #include <QPointF>
 #include <QRectF>
 #include <QString>
+#include <cmath>
+#include <typeinfo>
 
-/*
- * Clase abstracta ElementoDeBatalla
- * Base de todo lo que se mueve en pantalla.
- * Guarda: posicion, velocidad, tamano, integridad (vida) y si esta activo.
- */
+inline bool casiIgual(double a, double b) { return std::fabs(a - b) < 1e-9; }
+
 class ElementoDeBatalla {
 protected:
-    QPointF m_posicion;    // Posicion actual en coordenadas del mundo (x, y)
-    QPointF m_velocidad;   // Vector de velocidad (vx, vy)
-    QPointF m_tamano;      // Ancho y alto para calcular los limites de colision
-    double m_integridad;   // Vida o resistencia restante del elemento
-    bool m_activo;         // Bandera para saber si sigue activo en el juego o debe eliminarse
+    QPointF m_posicion;
+    QPointF m_velocidad;
+    QPointF m_tamano;
+    double m_integridad;
+    bool m_activo;
+
+    // protegidos: la clase es abstracta (evita slicing)
+    ElementoDeBatalla(const ElementoDeBatalla&) = default;
+    ElementoDeBatalla& operator=(const ElementoDeBatalla& otro);
 
 public:
-    // Constructor por defecto con valores iniciales
-    ElementoDeBatalla(QPointF pos = QPointF(0, 0), QPointF vel = QPointF(0, 0), QPointF tam = QPointF(50, 50), double vida = 100.0);
-
-    // Destructor virtual para garantizar la correcta liberacion de memoria en clases derivadas
+    ElementoDeBatalla(const QPointF& pos = QPointF(0, 0), const QPointF& vel = QPointF(0, 0),
+                      const QPointF& tam = QPointF(50, 50), double vida = 100.0);
     virtual ~ElementoDeBatalla() = default;
 
-    // Firmas fijas solicitadas por la arquitectura
-    virtual void actualizar(double dt) = 0;
-    virtual QString rutaSprite() const = 0; // Daniel la usa para cargar el sprite correspondiente en la GUI
+    bool operator==(const ElementoDeBatalla& otro) const;
+    bool operator!=(const ElementoDeBatalla& otro) const { return !(*this == otro); }
 
-    // Getters y Setters de posicion y velocidad
+    virtual void actualizar(double dt) = 0;
+    virtual QString rutaSprite() const = 0;
+    virtual double altura() const { return 0.0; }
+
     QPointF posicion() const;
     void setPosicion(const QPointF& pos);
-
     QPointF velocidad() const;
     void setVelocidad(const QPointF& vel);
-
-    // Limites de colision basados en QRectF para usar QRectF::intersects
-    QRectF limites() const;
-
-    // Gestion de impacto y estado
-    void recibirImpacto(double dano);
+    QPointF tamano() const;
+    void setTamano(const QPointF& tam);
+    double integridad() const;
+    void setIntegridad(double vida);
     bool estaActivo() const;
+    void setActivo(bool activo);
+
+    QRectF limites() const;
+    void recibirImpacto(double dano);
     void desactivar();
 };
 

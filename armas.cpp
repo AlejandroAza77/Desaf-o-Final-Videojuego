@@ -1,59 +1,99 @@
 #include "armas.h"
-#include <cmath>
 
-Armas::Armas(QPointF pos, QPointF vel, double dano, int rebotes, double tiempoVida, double g, double e, TipoProyectil tipo, QPointF tam)
-    : ElementoDeBatalla(pos, vel, tam, 1.0),
-    m_dano(dano),
-    m_rebotesRestantes(rebotes),
-    m_tiempoVida(tiempoVida),
-    m_g(g),
-    m_e(e),
-    m_tipo(tipo),
-    m_tiempoAcumulado(0.0) {
+namespace {
+void validar(double g, double e) {
+    if (g <= 0.0) throw std::invalid_argument("La gravedad g debe ser mayor que cero.");
+    if (e < 0.0 || e > 1.0) throw std::invalid_argument("El coeficiente e debe estar entre 0 y 1.");
+}
+}
 
-    // Validacion estricta requerida: g > 0 y 0 <= e <= 1
-    if (m_g <= 0.0) {
-        throw std::invalid_argument("Error: La gravedad g debe ser mayor que cero.");
+Armas::Armas(const QPointF& pos, const QPointF& vel, double dano, int rebotes, double tiempoVida,
+             double g, double e, TipoProyectil tipo, const QPointF& tam, ModoVista modo)
+    : ElementoDeBatalla(pos, vel, tam, 1.0), m_dano(dano), m_rebotesRestantes(rebotes),
+    m_tiempoVida(tiempoVida), m_g(g), m_e(e), m_tipo(tipo), m_modo(modo), m_altura(0.0),
+    m_velAltura(0.0), m_aterrizo(false), m_destino(0, 0), m_tieneDestino(false) {
+    validar(m_g, m_e);
+}
+
+Armas& Armas::operator=(const Armas& otro) {
+    if (this == &otro) return *this;
+    ElementoDeBatalla::operator=(otro);
+    m_dano = otro.m_dano;
+    m_rebotesRestantes = otro.m_rebotesRestantes;
+    m_tiempoVida = otro.m_tiempoVida;
+    m_g = otro.m_g;
+    m_e = otro.m_e;
+    m_tipo = otro.m_tipo;
+    m_modo = otro.m_modo;
+    m_altura = otro.m_altura;
+    m_velAltura = otro.m_velAltura;
+    m_aterrizo = otro.m_aterrizo;
+    m_destino = otro.m_destino;
+    m_tieneDestino = otro.m_tieneDestino;
+    return *this;
+}
+
+bool Armas::operator==(const Armas& o) const {
+    return ElementoDeBatalla::operator==(o) && casiIgual(m_dano, o.m_dano) &&
+           m_rebotesRestantes == o.m_rebotesRestantes && casiIgual(m_tiempoVida, o.m_tiempoVida) &&
+           casiIgual(m_g, o.m_g) && casiIgual(m_e, o.m_e) && m_tipo == o.m_tipo &&
+           m_modo == o.m_modo && casiIgual(m_altura, o.m_altura) &&
+           casiIgual(m_velAltura, o.m_velAltura) && m_aterrizo == o.m_aterrizo &&
+           m_tieneDestino == o.m_tieneDestino && m_destino == o.m_destino;
+}
+
+void Armas::apuntar(const QPointF& origen, const QPointF& destino, double tiempoVuelo) {
+    if (tiempoVuelo <= 0.0) throw std::invalid_argument("El tiempo de vuelo debe ser mayor que cero.");
+    const double T = tiempoVuelo;
+    const QPointF d = destino - origen;
+    m_posicion = origen;
+    if (m_modo == ModoVista::Cenital) {
+        m_velocidad = QPointF(d.x() / T, d.y() / T);
+        m_velAltura = 0.5 * m_g * T;  // vuelve a altura 0 justo en t = T
+    } else {
+        m_velocidad = QPointF(d.x() / T, (d.y() - 0.5 * m_g * T * T) / T);
+        m_velAltura = 0.0;
     }
-    if (m_e < 0.0 || m_e > 1.0) {
-        throw std::invalid_argument("Error: El coeficiente de restitucion e debe estar entre 0 y 1.");
-    }
+    m_altura = 0.0;
+    m_destino = destino;
+    m_tieneDestino = true;
+    m_aterrizo = false;
+    m_tiempoVida = T + 0.5;
 }
 
 void Armas::actualizar(double dt) {
-    if (!estaActivo()) return;
+    if (!estaActivo() || m_aterrizo) return;
 
-    // Reducir el tiempo de vida restante
     m_tiempoVida -= dt;
     if (m_tiempoVida <= 0.0) {
         desactivar();
         return;
     }
 
-    m_tiempoAcumulado += dt;
-
-    // Movimiento parabolico: calculo de posicion y velocidad bajo la gravedad
-    double nuevaVx = m_velocidad.x();
-    double nuevaVy = m_velocidad.y() + m_g * dt; // Aceleracion vertical acumulada
-
-    m_posicion.setX(m_posicion.x() + nuevaVx * dt);
-    m_posicion.setY(m_posicion.y() + nuevaVy * dt);
-
-    m_velocidad.setX(nuevaVx);
-    m_velocidad.setY(nuevaVy);
+    if (m_modo == ModoVista::Cenital) {  // la gravedad actua sobre la altura
+        m_posicion += m_velocidad * dt;
+        m_altura += m_velAltura * dt;
+        m_velAltura -= m_g * dt;
+        if (m_altura <= 0.0 && m_velAltura < 0.0) {
+            m_altura = 0.0;
+            m_velAltura = 0.0;
+            m_velocidad = QPointF(0, 0);
+            m_aterrizo = true;
+            if (m_tieneDestino) m_posicion = m_destino;
+        }
+    } else {                             // la gravedad actua sobre y
+        m_velocidad.setY(m_velocidad.y() + m_g * dt);
+        m_posicion += m_velocidad * dt;
+    }
 }
 
 QString Armas::rutaSprite() const {
     switch (m_tipo) {
-    case TipoProyectil::Coco:
-        return ":/sprites/nivel1/coco.png";
-    case TipoProyectil::Piedra:
-        return ":/sprites/nivel1/piedra.png";
-    case TipoProyectil::BalaDeCanon:
-        return ":/sprites/nivel1/baladecanon.png";
-    default:
-        return ":/sprites/nivel1/coco.png";
+    case TipoProyectil::Coco:        return QStringLiteral(":/sprites/nivel1/coco.png");
+    case TipoProyectil::Piedra:      return QStringLiteral(":/sprites/nivel1/piedra.png");
+    case TipoProyectil::BalaDeCanon: return QStringLiteral(":/sprites/nivel1/baladecanon.png");
     }
+    return QStringLiteral(":/sprites/nivel1/coco.png");
 }
 
 void Armas::rebotar(const QPointF& normal) {
@@ -61,23 +101,18 @@ void Armas::rebotar(const QPointF& normal) {
         desactivar();
         return;
     }
-
-    m_rebotesRestantes--;
-
-    // Rebote elastico usando QPointF::dotProduct: v' = v - (1 + e) * (v dot n) * n
-    double productoPunto = QPointF::dotProduct(m_velocidad, normal);
-
-    double vxNueva = m_velocidad.x() - (1.0 + m_e) * productoPunto * normal.x();
-    double vyNueva = m_velocidad.y() - (1.0 + m_e) * productoPunto * normal.y();
-
-    m_velocidad = QPointF(vxNueva, vyNueva);
+    --m_rebotesRestantes;
+    m_tieneDestino = false;
+    const double pp = QPointF::dotProduct(m_velocidad, normal);
+    m_velocidad = QPointF(m_velocidad.x() - (1.0 + m_e) * pp * normal.x(),
+                          m_velocidad.y() - (1.0 + m_e) * pp * normal.y());
 }
 
-bool Armas::haExpirado() const {
-    return !estaActivo() || m_tiempoVida <= 0.0;
-}
+bool Armas::haExpirado() const { return !estaActivo() || m_tiempoVida <= 0.0; }
 
-void Armas::reiniciar(QPointF pos, QPointF vel, double dano, int rebotes, double tiempoVida, double g, double e, TipoProyectil tipo) {
+void Armas::reiniciar(const QPointF& pos, const QPointF& vel, double dano, int rebotes,
+                      double tiempoVida, double g, double e, TipoProyectil tipo, ModoVista modo) {
+    validar(g, e);
     m_posicion = pos;
     m_velocidad = vel;
     m_dano = dano;
@@ -86,31 +121,45 @@ void Armas::reiniciar(QPointF pos, QPointF vel, double dano, int rebotes, double
     m_g = g;
     m_e = e;
     m_tipo = tipo;
-    m_tiempoAcumulado = 0.0;
+    m_modo = modo;
+    m_altura = 0.0;
+    m_velAltura = 0.0;
+    m_aterrizo = false;
+    m_tieneDestino = false;
+    m_integridad = 1.0;
     m_activo = true;
 }
 
-// Getters y Setters
 double Armas::dano() const { return m_dano; }
-void Armas::setDano(double dano) { m_dano = dano; }
-
+void Armas::setDano(double dano) {
+    if (dano < 0.0) throw std::invalid_argument("El dano no puede ser negativo.");
+    m_dano = dano;
+}
 int Armas::rebotesRestantes() const { return m_rebotesRestantes; }
-void Armas::setRebotesRestantes(int rebotes) { m_rebotesRestantes = rebotes; }
-
+void Armas::setRebotesRestantes(int rebotes) {
+    if (rebotes < 0) throw std::invalid_argument("Los rebotes no pueden ser negativos.");
+    m_rebotesRestantes = rebotes;
+}
 double Armas::tiempoVida() const { return m_tiempoVida; }
 void Armas::setTiempoVida(double tiempoVida) { m_tiempoVida = tiempoVida; }
-
 double Armas::gravedad() const { return m_g; }
-void Armas::setGravedad(double g) {
-    if (g <= 0.0) throw std::invalid_argument("La gravedad debe ser mayor que cero.");
-    m_g = g;
-}
-
+void Armas::setGravedad(double g) { validar(g, m_e); m_g = g; }
 double Armas::coeficienteRestitucion() const { return m_e; }
-void Armas::setCoeficienteRestitucion(double e) {
-    if (e < 0.0 || e > 1.0) throw std::invalid_argument("El coeficiente debe estar entre 0 y 1.");
-    m_e = e;
-}
-
+void Armas::setCoeficienteRestitucion(double e) { validar(m_g, e); m_e = e; }
 TipoProyectil Armas::tipoProyectil() const { return m_tipo; }
 void Armas::setTipoProyectil(TipoProyectil tipo) { m_tipo = tipo; }
+ModoVista Armas::modo() const { return m_modo; }
+void Armas::setModo(ModoVista modo) { m_modo = modo; }
+double Armas::altura() const { return m_altura; }
+void Armas::setAltura(double altura) {
+    if (altura < 0.0) throw std::invalid_argument("La altura no puede ser negativa.");
+    m_altura = altura;
+}
+double Armas::velocidadAltura() const { return m_velAltura; }
+void Armas::setVelocidadAltura(double v) { m_velAltura = v; }
+bool Armas::haAterrizado() const { return m_aterrizo; }
+void Armas::setAterrizo(bool aterrizo) { m_aterrizo = aterrizo; }
+QPointF Armas::destino() const { return m_destino; }
+void Armas::setDestino(const QPointF& destino) { m_destino = destino; }
+bool Armas::tieneDestino() const { return m_tieneDestino; }
+void Armas::setTieneDestino(bool tiene) { m_tieneDestino = tiene; }

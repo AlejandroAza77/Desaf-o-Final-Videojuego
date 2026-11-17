@@ -4,56 +4,69 @@
 #include "elementodebatalla.h"
 #include <stdexcept>
 
-enum class TipoProyectil {
-    Coco,
-    Piedra,
-    BalaDeCanon
-};
+enum class TipoProyectil { Coco, Piedra, BalaDeCanon };
+enum class ModoVista { Cenital, Lateral };
 
 class Armas : public ElementoDeBatalla {
 private:
     double m_dano;
-    int m_rebotesRestantes;     // Numero de rebotes permitidos antes de destruirse
+    int m_rebotesRestantes;
     double m_tiempoVida;
-    double m_g;                 // Aceleracion de la gravedad (g > 0)
-    double m_e;                 // Coeficiente de restitucion (0 <= e <= 1)
+    double m_g;
+    double m_e;
     TipoProyectil m_tipo;
-    double m_tiempoAcumulado;
+    ModoVista m_modo;
+    double m_altura;
+    double m_velAltura;
+    bool m_aterrizo;
+    QPointF m_destino;
+    bool m_tieneDestino;
 
 public:
-    // Constructor con validacion de parametros fisicos
-    Armas(QPointF pos, QPointF vel, double dano, int rebotes, double tiempoVida, double g, double e, TipoProyectil tipo, QPointF tam = QPointF(25, 25));
+    Armas(const QPointF& pos, const QPointF& vel, double dano, int rebotes, double tiempoVida,
+          double g, double e, TipoProyectil tipo, const QPointF& tam = QPointF(25, 25),
+          ModoVista modo = ModoVista::Lateral);
+    Armas(const Armas&) = default;
+    ~Armas() override = default;
 
-    // Destructor virtual por defecto
-    virtual ~Armas() = default;
+    Armas& operator=(const Armas& otro);
+    bool operator==(const Armas& otro) const;
+    bool operator!=(const Armas& otro) const { return !(*this == otro); }
 
-    // Sobrescritura de metodos virtuales de elementodebatalla
     void actualizar(double dt) override;
     QString rutaSprite() const override;
 
-    // Metodos especificos de Armas
+    void apuntar(const QPointF& origen, const QPointF& destino, double tiempoVuelo);
     void rebotar(const QPointF& normal);
     bool haExpirado() const;
-    void reiniciar(QPointF pos, QPointF vel, double dano, int rebotes, double tiempoVida, double g, double e, TipoProyectil tipo);
+    void reiniciar(const QPointF& pos, const QPointF& vel, double dano, int rebotes,
+                   double tiempoVida, double g, double e, TipoProyectil tipo,
+                   ModoVista modo = ModoVista::Lateral);
 
-    // Getters y Setters c
     double dano() const;
     void setDano(double dano);
-
     int rebotesRestantes() const;
     void setRebotesRestantes(int rebotes);
-
     double tiempoVida() const;
     void setTiempoVida(double tiempoVida);
-
     double gravedad() const;
     void setGravedad(double g);
-
     double coeficienteRestitucion() const;
     void setCoeficienteRestitucion(double e);
-
     TipoProyectil tipoProyectil() const;
     void setTipoProyectil(TipoProyectil tipo);
+    ModoVista modo() const;
+    void setModo(ModoVista modo);
+    double altura() const override;
+    void setAltura(double altura);
+    double velocidadAltura() const;
+    void setVelocidadAltura(double v);
+    bool haAterrizado() const;
+    void setAterrizo(bool aterrizo);
+    QPointF destino() const;
+    void setDestino(const QPointF& destino);
+    bool tieneDestino() const;
+    void setTieneDestino(bool tiene);
 };
 
 #endif // ARMAS_H

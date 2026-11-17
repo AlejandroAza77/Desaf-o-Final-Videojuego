@@ -1,61 +1,65 @@
-#ifndef OBJETODESCENARIO_H
-#define OBJETODESCENARIO_H
+#ifndef OBJETODELESCENARIO_H
+#define OBJETODELESCENARIO_H
 
 #include "elementodebatalla.h"
+#include <stdexcept>
 
-// Enumeracion para los tipos de objetos del escenario
 enum class TipoObjeto {
-    TroncoFlotante,
-    TrampaPendulo,
-    PlataformaMovil,
-    BarrilExplosivo,
-    PastelDeYuca
+    TroncoFlotante, TrampaPendulo, PlataformaMovil, BarrilExplosivo, PastelDeYuca,
+    Roca, CocoEnSuelo
 };
 
 class ObjetoDelEscenario : public ElementoDeBatalla {
 private:
     TipoObjeto m_tipoObjeto;
     bool m_recogible;
-
-    // Parametros fisicos y geometricos
-    double m_amplitud;          // Amplitud A para movimiento armonico (A >= 0)
-    double m_frecuencia;        // Frecuencia angular omega
+    bool m_estatico;
+    bool m_oscilaEnX;
+    double m_amplitud;  // pendulo: angulo en radianes; resto: distancia en px
+    double m_frecuencia;
     double m_fase;
     double m_longitudCuerda;
-    QPointF m_posicionBase;     // Posicion central o pivote de referencia
-    double m_tiempoAcumulado;   // Tiempo acumulado para calcular las ecuaciones parametricas
+    QPointF m_posicionBase;
+    double m_tiempoAcumulado;
+
+    void configurarSegunTipo();
 
 public:
-    // Constructor con validacion estricta de parametros fisicos
-    ObjetoDelEscenario(QPointF posBase, TipoObjeto tipo, double amplitud = 0.0, double frecuencia = 1.0, double fase = 0.0, double longitud = 50.0, QPointF tam = QPointF(50, 50));
+    ObjetoDelEscenario(const QPointF& posBase, TipoObjeto tipo, double amplitud = 0.0,
+                       double frecuencia = 1.0, double fase = 0.0, double longitud = 50.0,
+                       const QPointF& tam = QPointF(50, 50), bool oscilaEnX = true);
+    ObjetoDelEscenario(const ObjetoDelEscenario&) = default;
+    ~ObjetoDelEscenario() override = default;
 
-    // Destructor virtual por defecto
-    virtual ~ObjetoDelEscenario() = default;
+    ObjetoDelEscenario& operator=(const ObjetoDelEscenario& otro);
+    bool operator==(const ObjetoDelEscenario& otro) const;
+    bool operator!=(const ObjetoDelEscenario& otro) const { return !(*this == otro); }
 
-    // Sobrescritura de metodos virtuales de ElementoDeBatalla
     void actualizar(double dt) override;
     QString rutaSprite() const override;
-
-    // Metodos especificos de los objetos del escenario
-    TipoObjeto tipo() const;
-    void setTipo(TipoObjeto tipo);
-
-    bool esRecogible() const;
-    void setRecogible(bool recogible);
-
-    // Acciones particulares segun el tipo de objeto
     void explotar();
     void recoger();
 
-    // Getters y Setters de parametros fisicos
+    TipoObjeto tipo() const;
+    void setTipo(TipoObjeto tipo);
+    bool esRecogible() const;
+    void setRecogible(bool recogible);
+    bool esEstatico() const;
+    void setEstatico(bool estatico);
+    bool oscilaEnX() const;
+    void setOscilaEnX(bool oscilaEnX);
     double amplitud() const;
     void setAmplitud(double amplitud);
-
     double frecuencia() const;
     void setFrecuencia(double frecuencia);
-
+    double fase() const;
+    void setFase(double fase);
     double longitudCuerda() const;
     void setLongitudCuerda(double longitud);
+    QPointF posicionBase() const;
+    void setPosicionBase(const QPointF& pos);
+    double tiempoAcumulado() const;
+    void setTiempoAcumulado(double t);
 };
 
-#endif // OBJETODESCENARIO_H
+#endif // OBJETODELESCENARIO_H
