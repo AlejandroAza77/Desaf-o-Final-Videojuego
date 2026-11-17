@@ -13,32 +13,26 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 set(PROJECT_SOURCES
-feature/elemento-de-batalla
     main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
-        armas.h
-        armas.cpp
-        elementodebatalla.h
-        elementodebatalla.cpp
-        niveldebatalla.h
-        niveldebatalla.cpp
-        objetodelescenario.h
-        objetodelescenario.cpp
-
+    mainwindow.cpp
+    mainwindow.h
+    mainwindow.ui
+    armas.cpp
+    armas.h
+    elementodebatalla.cpp
+    elementodebatalla.h
+    niveldebatalla.cpp
+    niveldebatalla.h
+    objetodelescenario.cpp
+    objetodelescenario.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(DesafioFinal
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        armas.h
-        armas.cpp
-        objetodelescenario.cpp objetodelescenario.h
-        elementodebatalla.cpp elementodebatalla.h
-        niveldebatalla.cpp niveldebatalla.h
-
+        germanquintero.h germanquintero.cpp
+        transicionmultiplano.h transicionmultiplano.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET DesafioFinal APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
