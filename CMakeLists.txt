@@ -34,6 +34,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         germanquintero.h germanquintero.cpp
         transicionmultiplano.h transicionmultiplano.cpp
         agenteinteligente.h agenteinteligente.cpp
+        carretadecanon.h carretadecanon.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET DesafioFinal APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
