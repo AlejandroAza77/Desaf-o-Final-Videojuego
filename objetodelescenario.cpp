@@ -20,6 +20,7 @@ void ObjetoDelEscenario::configurarSegunTipo() {
                    m_tipoObjeto == TipoObjeto::PlataformaMovil);
 }
 
+// Sobrecarga del operador de asignacion
 ObjetoDelEscenario& ObjetoDelEscenario::operator=(const ObjetoDelEscenario& otro) {
     if (this == &otro) return *this;
     ElementoDeBatalla::operator=(otro);
@@ -45,21 +46,6 @@ bool ObjetoDelEscenario::operator==(const ObjetoDelEscenario& o) const {
            casiIgual(m_tiempoAcumulado, o.m_tiempoAcumulado);
 }
 
-// Sobrecarga del operador de asignacion
-ObjetoDelEscenario& ObjetoDelEscenario::operator=(const ObjetoDelEscenario& otro) {
-    if (this != &otro) {
-        ElementoDeBatalla::operator=(otro); // Asignar la parte heredada
-        m_tipoObjeto = otro.m_tipoObjeto;
-        m_recogible = otro.m_recogible;
-        m_amplitud = otro.m_amplitud;
-        m_frecuencia = otro.m_frecuencia;
-        m_fase = otro.m_fase;
-        m_longitudCuerda = otro.m_longitudCuerda;
-        m_posicionBase = otro.m_posicionBase;
-        m_tiempoAcumulado = otro.m_tiempoAcumulado;
-    }
-    return *this;
-}
 
 void ObjetoDelEscenario::actualizar(double dt) {
     if (m_estatico || !estaActivo()) return;
@@ -91,15 +77,30 @@ void ObjetoDelEscenario::actualizar(double dt) {
 
 QString ObjetoDelEscenario::rutaSprite() const {
     switch (m_tipoObjeto) {
-    case TipoObjeto::TroncoFlotante:  return QStringLiteral(":/sprites/nivel1/tronco.png");
-    case TipoObjeto::Roca:            return QStringLiteral(":/sprites/nivel1/roca.png");
-    case TipoObjeto::CocoEnSuelo:     return QStringLiteral(":/sprites/nivel1/coco.png");
-    case TipoObjeto::TrampaPendulo:   return QStringLiteral(":/sprites/nivel2/boledora.png");
-    case TipoObjeto::PlataformaMovil: return QStringLiteral(":/sprites/nivel2/plataforma.png");
-    case TipoObjeto::BarrilExplosivo: return QStringLiteral(":/sprites/nivel2/barril.png");
-    case TipoObjeto::PastelDeYuca:    return QStringLiteral(":/sprites/nivel2/pastelyuca.png");
+    case TipoObjeto::TroncoFlotante:
+        // Sprite de tronco flotante oscilando en el rio (Nivel 1)
+        return QString();
+    case TipoObjeto::Roca:
+        // Sprite de roca del escenario para rebotes (Nivel 1)
+        return QString();
+    case TipoObjeto::CocoEnSuelo:
+        // Sprite de coco recogible en el suelo (Nivel 1)
+        return QString();
+    case TipoObjeto::TrampaPendulo:
+        // Sprite de boledora o pendulo oscilante (Nivel 2)
+        return QString();
+    case TipoObjeto::PlataformaMovil:
+        // Sprite de plataforma movil en el escenario (Nivel 2)
+        return QString();
+    case TipoObjeto::BarrilExplosivo:
+        // Sprite de barril explosivo (Nivel 2)
+        return QString();
+    case TipoObjeto::PastelDeYuca:
+        // Sprite de pastel de yuca recogible para especialidad (Nivel 2)
+        return QString();
     }
-    return QStringLiteral(":/sprites/nivel1/tronco.png");
+    // Sprite por defecto si no coincide ningun tipo
+    return QString();
 }
 
 void ObjetoDelEscenario::explotar() {

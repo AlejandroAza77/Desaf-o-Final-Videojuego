@@ -61,21 +61,6 @@ void Armas::apuntar(const QPointF& origen, const QPointF& destino, double tiempo
     m_tiempoVida = T + 0.5;
 }
 
-// Sobrecarga del operador de asignacion
-Armas& Armas::operator=(const Armas& otro) {
-    if (this != &otro) {
-        ElementoDeBatalla::operator=(otro); // Asignar la parte heredada
-        m_dano = otro.m_dano;
-        m_rebotesRestantes = otro.m_rebotesRestantes;
-        m_tiempoVida = otro.m_tiempoVida;
-        m_g = otro.m_g;
-        m_e = otro.m_e;
-        m_tipo = otro.m_tipo;
-        m_tiempoAcumulado = otro.m_tiempoAcumulado;
-    }
-    return *this;
-}
-
 void Armas::actualizar(double dt) {
     if (!estaActivo() || m_aterrizo) return;
 
@@ -104,11 +89,18 @@ void Armas::actualizar(double dt) {
 
 QString Armas::rutaSprite() const {
     switch (m_tipo) {
-    case TipoProyectil::Coco:        return QStringLiteral(":/sprites/nivel1/coco.png");
-    case TipoProyectil::Piedra:      return QStringLiteral(":/sprites/nivel1/piedra.png");
-    case TipoProyectil::BalaDeCanon: return QStringLiteral(":/sprites/nivel1/baladecanon.png");
+    case TipoProyectil::Coco:
+        // Sprite de coco para el proyectil de German
+        return QString();
+    case TipoProyectil::Piedra:
+        // Sprite de piedra para el proyectil de German
+        return QString();
+    case TipoProyectil::BalaDeCanon:
+        // Sprite de bala de canon disparada por la carreta
+        return QString();
     }
-    return QStringLiteral(":/sprites/nivel1/coco.png");
+    // Sprite por defecto si no coincide ningun tipo
+    return QString();
 }
 
 void Armas::rebotar(const QPointF& normal) {
