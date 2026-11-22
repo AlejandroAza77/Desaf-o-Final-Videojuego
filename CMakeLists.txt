@@ -36,6 +36,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         agenteinteligente.h agenteinteligente.cpp
         carretadecanon.h carretadecanon.cpp
         soldadocentinela.h soldadocentinela.cpp
+        nivelrioteatinos.h nivelrioteatinos.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET DesafioFinal APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
