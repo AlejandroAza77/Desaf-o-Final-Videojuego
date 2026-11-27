@@ -3,12 +3,12 @@
 #include <cmath>
 
 GermanQuintero::GermanQuintero(const QPointF& pos, Modo modo, const QPointF& tam)
-    : ElementoDeBatalla(pos, QPointF(0, 0), tam, 100.0),
+    : ElementoDeBatalla(pos, QPointF(0, 0), tam, kVida),
     m_modo(modo), m_tamanoBase(tam), m_direccion(0, 0), m_zona(), m_tieneZona(false),
     m_corriente(0, 0), m_suelo(pos.y() + tam.y() / 2.0), m_enSuelo(true), m_mu(0.3),
-    m_cocos(kCapacidad), m_combo(0), m_especialidad(Especialidad::Ninguna),
+    m_cocos(kCapacidad), m_especialidad(Especialidad::Ninguna),
     m_tiempoEspecialidad(0.0), m_factorVelocidad(1.0), m_factorSalto(1.0),
-    m_factorFriccion(1.0), m_factorDano(1.0), m_factorAlcance(1.0) {
+    m_factorFriccion(1.0), m_factorDano(1.0), m_factorAlcance(1.0), m_escala(1.0) {
     if (tam.x() <= 0.0 || tam.y() <= 0.0)
         throw std::invalid_argument("Error: el tamano de German debe ser positivo.");
 }
@@ -31,7 +31,7 @@ bool GermanQuintero::enSuelo() const { return m_enSuelo; }
 
 void GermanQuintero::saltar() {
     if (m_modo == Modo::Plataforma && m_enSuelo) {
-        m_velocidad.setY(-kSalto * m_factorSalto);  // [Qt 6.x] y crece hacia abajo: arriba es negativo
+        m_velocidad.setY(-kSalto * m_factorSalto * m_escala);  // [Qt 6.x] y crece hacia abajo: arriba es negativo
         m_enSuelo = false;
     }
 }
@@ -73,13 +73,13 @@ void GermanQuintero::moverCenital(double dt) {
 
 void GermanQuintero::moverPlataforma(double dt) {
     // [Qt 6.x] Friccion dinamica: aFric = mu * g. Cresta Veloz la reduce a la mitad.
-    const double aFric = m_mu * m_factorFriccion * kG;
-    const double vmax = kVelMaxPlat * m_factorVelocidad;
+    const double aFric = m_mu * m_factorFriccion * kG * m_escala;
+    const double vmax = kVelMaxPlat * m_factorVelocidad * m_escala;
     double vx = m_velocidad.x();
 
     if (m_direccion.x() != 0.0) {
         // [Qt 6.x] Con impulso: aceleracion neta = impulso - friccion (en barro cuesta mas).
-        const double neta = std::max(0.0, kAceleracion - aFric);
+        const double neta = std::max(0.0, kAceleracion * m_escala - aFric);
         vx += (m_direccion.x() > 0.0 ? 1.0 : -1.0) * neta * dt;
     } else {
         // [Qt 6.x] Sin impulso: la friccion lo frena hasta detenerlo.
@@ -90,7 +90,7 @@ void GermanQuintero::moverPlataforma(double dt) {
     vx = std::max(-vmax, std::min(vx, vmax));
 
     // [Qt 6.x] Caida libre: v += g dt (y crece hacia abajo).
-    const double vy = m_velocidad.y() + kG * dt;
+    const double vy = m_velocidad.y() + kG * m_escala * dt;
     m_velocidad = QPointF(vx, vy);
     m_posicion += m_velocidad * dt;
 
@@ -113,7 +113,16 @@ bool GermanQuintero::recogerCoco() {
     return true;
 }
 
-double GermanQuintero::alcance() const { return kAlcanceBase * m_factorAlcance; }
+double GermanQuintero::alcance() const { return kAlcanceBase * m_factorAlcance * m_escala; }
+
+double GermanQuintero::escalaMundo() const { return m_escala; }
+void GermanQuintero::setEscalaMundo(double escala) {
+    if (escala <= 0.0) throw std::invalid_argument("Error: la escala del mundo debe ser mayor que cero.");
+    const double k = escala / m_escala;
+    m_escala = escala;
+    m_tamanoBase = m_tamanoBase * k;
+    m_tamano = m_tamano * k;
+}
 
 bool GermanQuintero::lanzarCoco(const QPointF& destino, Armas& proyectil) {
     if (m_cocos <= 0) return false;
@@ -128,11 +137,11 @@ bool GermanQuintero::lanzarCoco(const QPointF& destino, Armas& proyectil) {
         dist = alcance();
     }
     // [Qt 6.x] Tiempo de vuelo proporcional a la distancia (tiro lejano tarda mas).
-    const double T = std::max(kTVueloMin, dist / kVelVuelo);
+    const double T = std::max(kTVueloMin, dist / (kVelVuelo * m_escala));
     const ModoVista mv = (m_modo == Modo::Cenital) ? ModoVista::Cenital : ModoVista::Lateral;
 
     proyectil.reiniciar(origen, QPointF(0, 0), kDanoBase * m_factorDano, 2, T + 0.5,
-                        kGravedadCoco, 0.6, TipoProyectil::Coco, mv);
+                        kGravedadCoco * m_escala, 0.6, TipoProyectil::Coco, mv);
     proyectil.apuntar(origen, fin, T);
     --m_cocos;
     return true;
@@ -150,7 +159,6 @@ void GermanQuintero::terminarEspecialidad() {
     cambiarTamano(m_tamanoBase);
     m_especialidad = Especialidad::Ninguna;
     m_tiempoEspecialidad = 0.0;
-    m_combo = 0;
 }
 
 void GermanQuintero::activarEspecialidad(Especialidad esp) {
@@ -177,13 +185,15 @@ void GermanQuintero::activarEspecialidad(Especialidad esp) {
     }
 }
 
-void GermanQuintero::registrarEsquive() {
-    ++m_combo;
-    if (m_combo >= kEsquivesParaCresta && m_especialidad == Especialidad::Ninguna)
-        activarEspecialidad(Especialidad::CrestaVeloz);
+GermanQuintero::Desgaste GermanQuintero::desgaste() const {
+    // Umbrales sobre la vida: con disparos de 25 sobre 100, cada impacto sube un nivel.
+    if (m_integridad > 0.75 * kVida) return Desgaste::Normal;
+    if (m_integridad > 0.50 * kVida) return Desgaste::Leve;
+    if (m_integridad > 0.25 * kVida) return Desgaste::Medio;
+    if (m_integridad > 0.0) return Desgaste::Fuerte;
+    return Desgaste::Fantasma;
 }
 
-void GermanQuintero::romperCombo() { m_combo = 0; }
 GermanQuintero::Especialidad GermanQuintero::especialidad() const { return m_especialidad; }
 double GermanQuintero::tiempoEspecialidad() const { return m_tiempoEspecialidad; }
 GermanQuintero::Modo GermanQuintero::modo() const { return m_modo; }
@@ -201,7 +211,6 @@ GermanQuintero& GermanQuintero::operator=(const GermanQuintero& otro) {
     m_enSuelo = otro.m_enSuelo;
     m_mu = otro.m_mu;
     m_cocos = otro.m_cocos;
-    m_combo = otro.m_combo;
     m_especialidad = otro.m_especialidad;
     m_tiempoEspecialidad = otro.m_tiempoEspecialidad;
     m_factorVelocidad = otro.m_factorVelocidad;
@@ -209,6 +218,7 @@ GermanQuintero& GermanQuintero::operator=(const GermanQuintero& otro) {
     m_factorFriccion = otro.m_factorFriccion;
     m_factorDano = otro.m_factorDano;
     m_factorAlcance = otro.m_factorAlcance;
+    m_escala = otro.m_escala;
     return *this;
 }
 
@@ -216,9 +226,61 @@ bool GermanQuintero::operator==(const GermanQuintero& o) const {
     return ElementoDeBatalla::operator==(o) && m_modo == o.m_modo && m_tamanoBase == o.m_tamanoBase &&
            m_direccion == o.m_direccion && m_tieneZona == o.m_tieneZona && m_zona == o.m_zona &&
            m_corriente == o.m_corriente && casiIgual(m_suelo, o.m_suelo) && m_enSuelo == o.m_enSuelo &&
-           casiIgual(m_mu, o.m_mu) && m_cocos == o.m_cocos && m_combo == o.m_combo &&
+           casiIgual(m_mu, o.m_mu) && m_cocos == o.m_cocos &&
            m_especialidad == o.m_especialidad && casiIgual(m_tiempoEspecialidad, o.m_tiempoEspecialidad) &&
            casiIgual(m_factorVelocidad, o.m_factorVelocidad) && casiIgual(m_factorSalto, o.m_factorSalto) &&
            casiIgual(m_factorFriccion, o.m_factorFriccion) && casiIgual(m_factorDano, o.m_factorDano) &&
-           casiIgual(m_factorAlcance, o.m_factorAlcance);
+           casiIgual(m_factorAlcance, o.m_factorAlcance) && casiIgual(m_escala, o.m_escala);
+}
+
+// ---- Accesores declarados en el .h que faltaba definir ----
+void GermanQuintero::setModo(Modo modo) { m_modo = modo; }
+QPointF GermanQuintero::tamanoBase() const { return m_tamanoBase; }
+void GermanQuintero::setTamanoBase(const QPointF& tam) {
+    if (tam.x() <= 0.0 || tam.y() <= 0.0)
+        throw std::invalid_argument("Error: el tamano base debe ser positivo.");
+    m_tamanoBase = tam;
+}
+QPointF GermanQuintero::direccion() const { return m_direccion; }
+QRectF GermanQuintero::zona() const { return m_zona; }
+bool GermanQuintero::tieneZona() const { return m_tieneZona; }
+void GermanQuintero::setTieneZona(bool tiene) { m_tieneZona = tiene; }
+QPointF GermanQuintero::corriente() const { return m_corriente; }
+double GermanQuintero::suelo() const { return m_suelo; }
+void GermanQuintero::setEnSuelo(bool enSuelo) { m_enSuelo = enSuelo; }
+double GermanQuintero::friccion() const { return m_mu; }
+void GermanQuintero::setCocos(int cocos) {
+    if (cocos < 0 || cocos > kCapacidad)
+        throw std::invalid_argument("Error: los cocos deben estar entre 0 y la capacidad.");
+    m_cocos = cocos;
+}
+void GermanQuintero::setEspecialidad(Especialidad esp) { m_especialidad = esp; }
+void GermanQuintero::setTiempoEspecialidad(double t) {
+    if (t < 0.0) throw std::invalid_argument("Error: el tiempo de especialidad no puede ser negativo.");
+    m_tiempoEspecialidad = t;
+}
+double GermanQuintero::factorVelocidad() const { return m_factorVelocidad; }
+void GermanQuintero::setFactorVelocidad(double f) {
+    if (f <= 0.0) throw std::invalid_argument("Error: el factor de velocidad debe ser mayor que cero.");
+    m_factorVelocidad = f;
+}
+double GermanQuintero::factorSalto() const { return m_factorSalto; }
+void GermanQuintero::setFactorSalto(double f) {
+    if (f <= 0.0) throw std::invalid_argument("Error: el factor de salto debe ser mayor que cero.");
+    m_factorSalto = f;
+}
+double GermanQuintero::factorFriccion() const { return m_factorFriccion; }
+void GermanQuintero::setFactorFriccion(double f) {
+    if (f < 0.0) throw std::invalid_argument("Error: el factor de friccion no puede ser negativo.");
+    m_factorFriccion = f;
+}
+double GermanQuintero::factorDano() const { return m_factorDano; }
+void GermanQuintero::setFactorDano(double f) {
+    if (f <= 0.0) throw std::invalid_argument("Error: el factor de dano debe ser mayor que cero.");
+    m_factorDano = f;
+}
+double GermanQuintero::factorAlcance() const { return m_factorAlcance; }
+void GermanQuintero::setFactorAlcance(double f) {
+    if (f <= 0.0) throw std::invalid_argument("Error: el factor de alcance debe ser mayor que cero.");
+    m_factorAlcance = f;
 }

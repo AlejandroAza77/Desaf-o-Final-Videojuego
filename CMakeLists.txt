@@ -9,46 +9,46 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Multimedia)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Multimedia)
 
 set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
-    armas.cpp
-    armas.h
     elementodebatalla.cpp
     elementodebatalla.h
-    niveldebatalla.cpp
-    niveldebatalla.h
+    armas.cpp
+    armas.h
     objetodelescenario.cpp
     objetodelescenario.h
+    germanquintero.cpp
+    germanquintero.h
+    agenteinteligente.cpp
+    agenteinteligente.h
+    enemigorealista.cpp
+    enemigorealista.h
+    niveldebatalla.cpp
+    niveldebatalla.h
+    nivelrioteatinos.cpp
+    nivelrioteatinos.h
+    nivelpuenteboyaca.cpp
+    nivelpuenteboyaca.h
+    escenadebatalla.cpp
+    escenadebatalla.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(DesafioFinal
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        germanquintero.h germanquintero.cpp
-        transicionmultiplano.h transicionmultiplano.cpp
-        agenteinteligente.h agenteinteligente.cpp
-        carretadecanon.h carretadecanon.cpp
-        soldadocentinela.h soldadocentinela.cpp
-        nivelrioteatinos.h nivelrioteatinos.cpp
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET DesafioFinal APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
         add_library(DesafioFinal SHARED
             ${PROJECT_SOURCES}
         )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
         add_executable(DesafioFinal
             ${PROJECT_SOURCES}
@@ -56,11 +56,17 @@ else()
     endif()
 endif()
 
-target_link_libraries(DesafioFinal PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+target_link_libraries(DesafioFinal PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Multimedia)
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
+file(GLOB_RECURSE SONIDOS CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "sonidos/*.mp3" "sonidos/*.wav")
+file(GLOB_RECURSE SPRITES_PNG CONFIGURE_DEPENDS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "sprites/*.png" "sprites/*.jpg")
+if(SPRITES_PNG AND ${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    # BIG_RESOURCES: los sprites pesan ~42 MB; sin esto rcc genera un .cpp enorme y MinGW se queda sin memoria.
+    qt_add_resources(DesafioFinal "sprites" BIG_RESOURCES PREFIX "/" FILES ${SPRITES_PNG} ${SONIDOS})  # imagenes (:/sprites/...) y sonidos (:/sonidos/...)
+elseif(NOT SPRITES_PNG)
+    message(WARNING "No hay sprites en ${CMAKE_CURRENT_SOURCE_DIR}/sprites: el juego se vera sin imagenes.")
+endif()
+
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.DesafioFinal)
 endif()

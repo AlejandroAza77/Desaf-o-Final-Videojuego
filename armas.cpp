@@ -1,6 +1,17 @@
 #include "armas.h"
 
 namespace {
+// Tamano en pantalla de cada proyectil (respeta la proporcion de su sprite).
+QPointF tamanoPorTipo(TipoProyectil t) {
+    switch (t) {
+    case TipoProyectil::Coco: return QPointF(44, 31);
+    case TipoProyectil::Piedra: return QPointF(36, 20);
+    case TipoProyectil::BalaDeCanon: return QPointF(58, 22);
+    case TipoProyectil::Cohete: return QPointF(86, 17);
+    }
+    return QPointF(25, 25);
+}
+
 void validar(double g, double e) {
     if (g <= 0.0) throw std::invalid_argument("La gravedad g debe ser mayor que cero.");
     if (e < 0.0 || e > 1.0) throw std::invalid_argument("El coeficiente e debe estar entre 0 y 1.");
@@ -11,7 +22,7 @@ Armas::Armas(const QPointF& pos, const QPointF& vel, double dano, int rebotes, d
              double g, double e, TipoProyectil tipo, const QPointF& tam, ModoVista modo)
     : ElementoDeBatalla(pos, vel, tam, 1.0), m_dano(dano), m_rebotesRestantes(rebotes),
     m_tiempoVida(tiempoVida), m_g(g), m_e(e), m_tipo(tipo), m_modo(modo), m_altura(0.0),
-    m_velAltura(0.0), m_aterrizo(false), m_destino(0, 0), m_tieneDestino(false) {
+    m_velAltura(0.0), m_aterrizo(false), m_destino(0, 0), m_tieneDestino(false), m_recto(false) {
     validar(m_g, m_e);
 }
 
@@ -30,6 +41,7 @@ Armas& Armas::operator=(const Armas& otro) {
     m_aterrizo = otro.m_aterrizo;
     m_destino = otro.m_destino;
     m_tieneDestino = otro.m_tieneDestino;
+    m_recto = otro.m_recto;
     return *this;
 }
 
@@ -39,7 +51,7 @@ bool Armas::operator==(const Armas& o) const {
            casiIgual(m_g, o.m_g) && casiIgual(m_e, o.m_e) && m_tipo == o.m_tipo &&
            m_modo == o.m_modo && casiIgual(m_altura, o.m_altura) &&
            casiIgual(m_velAltura, o.m_velAltura) && m_aterrizo == o.m_aterrizo &&
-           m_tieneDestino == o.m_tieneDestino && m_destino == o.m_destino;
+           m_tieneDestino == o.m_tieneDestino && m_destino == o.m_destino && m_recto == o.m_recto;
 }
 
 void Armas::apuntar(const QPointF& origen, const QPointF& destino, double tiempoVuelo) {
@@ -58,7 +70,21 @@ void Armas::apuntar(const QPointF& origen, const QPointF& destino, double tiempo
     m_destino = destino;
     m_tieneDestino = true;
     m_aterrizo = false;
+    m_recto = false;
     m_tiempoVida = T + 0.5;
+}
+
+void Armas::apuntarDirecto(const QPointF& origen, const QPointF& destino, double tiempoHastaDestino) {
+    if (tiempoHastaDestino <= 0.0) throw std::invalid_argument("El tiempo debe ser mayor que cero.");
+    m_posicion = origen;
+    m_velocidad = (destino - origen) / tiempoHastaDestino;
+    m_altura = 0.0;
+    m_velAltura = 0.0;
+    m_destino = destino;
+    m_tieneDestino = false;
+    m_aterrizo = false;
+    m_recto = true;
+    m_tiempoVida = tiempoHastaDestino + 1.5;  // si falla, sigue de largo antes de desaparecer
 }
 
 void Armas::actualizar(double dt) {
@@ -82,25 +108,41 @@ void Armas::actualizar(double dt) {
             if (m_tieneDestino) m_posicion = m_destino;
         }
     } else {                             // la gravedad actua sobre y
-        m_velocidad.setY(m_velocidad.y() + m_g * dt);
+        if (!m_recto) m_velocidad.setY(m_velocidad.y() + m_g * dt);
         m_posicion += m_velocidad * dt;
     }
 }
 
 QString Armas::rutaSprite() const {
     switch (m_tipo) {
-    case TipoProyectil::Coco:
-        // Sprite de coco para el proyectil de German
-        return QString();
-    case TipoProyectil::Piedra:
-        // Sprite de piedra para el proyectil de German
-        return QString();
-    case TipoProyectil::BalaDeCanon:
-        // Sprite de bala de canon disparada por la carreta
-        return QString();
+    case TipoProyectil::Coco: return QStringLiteral(":/sprites/nivel1/coco_vuelo.png");
+    case TipoProyectil::Piedra: return QStringLiteral(":/sprites/nivel1/piedra.png");
+    case TipoProyectil::BalaDeCanon: return QStringLiteral(":/sprites/nivel1/bala_vuelo.png");
+    case TipoProyectil::Cohete: return QStringLiteral(":/sprites/nivel2/cohete_vuelo.png");
     }
-    // Sprite por defecto si no coincide ningun tipo
-    return QString();
+    return QStringLiteral(":/sprites/nivel1/coco_vuelo.png");
+}
+
+// Los sprites de coco y bala llevan la estela a la izquierda (viajan hacia la derecha):
+// si el proyectil va hacia la izquierda se espejan.
+bool Armas::espejar() const {
+    return m_tipo != TipoProyectil::Cohete && m_tipo != TipoProyectil::Piedra && m_velocidad.x() < 0.0;
+}
+
+// El cohete tiene la punta a la izquierda: se gira para que apunte hacia donde viaja.
+double Armas::rotacion() const {
+    if (m_tipo != TipoProyectil::Cohete) return 0.0;
+    const double kPi = 3.14159265358979323846;
+    return std::atan2(m_velocidad.y(), m_velocidad.x()) * 180.0 / kPi + 180.0;
+}
+
+bool Armas::esEnemiga() const { return m_tipo == TipoProyectil::BalaDeCanon || m_tipo == TipoProyectil::Cohete; }
+
+QRectF Armas::areaImpacto() const {
+    double r = 12.0;
+    if (m_tipo == TipoProyectil::BalaDeCanon) r = 10.0;
+    else if (m_tipo == TipoProyectil::Cohete) r = 14.0;
+    return QRectF(m_posicion.x() - r, m_posicion.y() - r, 2.0 * r, 2.0 * r);
 }
 
 void Armas::rebotar(const QPointF& normal) {
@@ -122,6 +164,7 @@ void Armas::reiniciar(const QPointF& pos, const QPointF& vel, double dano, int r
     validar(g, e);
     m_posicion = pos;
     m_velocidad = vel;
+    m_tamano = tamanoPorTipo(tipo);
     m_dano = dano;
     m_rebotesRestantes = rebotes;
     m_tiempoVida = tiempoVida;
@@ -133,6 +176,7 @@ void Armas::reiniciar(const QPointF& pos, const QPointF& vel, double dano, int r
     m_velAltura = 0.0;
     m_aterrizo = false;
     m_tieneDestino = false;
+    m_recto = false;
     m_integridad = 1.0;
     m_activo = true;
 }
@@ -168,5 +212,6 @@ bool Armas::haAterrizado() const { return m_aterrizo; }
 void Armas::setAterrizo(bool aterrizo) { m_aterrizo = aterrizo; }
 QPointF Armas::destino() const { return m_destino; }
 void Armas::setDestino(const QPointF& destino) { m_destino = destino; }
+bool Armas::esRecto() const { return m_recto; }
 bool Armas::tieneDestino() const { return m_tieneDestino; }
 void Armas::setTieneDestino(bool tiene) { m_tieneDestino = tiene; }

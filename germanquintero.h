@@ -9,6 +9,8 @@ class GermanQuintero : public ElementoDeBatalla {
 public:
     enum class Modo { Cenital, Plataforma };
     enum class Especialidad { Ninguna, MachoAlfa, CrestaVeloz };
+    // Estado visual segun los disparos recibidos (un disparo enemigo = 25 de 100): elige el sprite.
+    enum class Desgaste { Normal, Leve, Medio, Fuerte, Fantasma };
 
     explicit GermanQuintero(const QPointF& pos, Modo modo, const QPointF& tam = QPointF(40, 60));
     GermanQuintero(const GermanQuintero&) = default;
@@ -25,9 +27,11 @@ public:
     bool recogerCoco();
     bool lanzarCoco(const QPointF& destino, Armas& proyectil);
     void activarEspecialidad(Especialidad esp);
-    void registrarEsquive();
-    void romperCombo();
     double alcance() const;
+    // Agranda a German y toda su fisica (velocidad, salto, gravedad, alcance) en la misma proporcion.
+    double escalaMundo() const;
+    void setEscalaMundo(double escala);
+    Desgaste desgaste() const;
 
     Modo modo() const;
     void setModo(Modo modo);
@@ -50,8 +54,6 @@ public:
     int cocos() const;
     void setCocos(int cocos);
     int capacidadCocos() const;
-    int combo() const;
-    void setCombo(int combo);
     Especialidad especialidad() const;
     void setEspecialidad(Especialidad esp);
     double tiempoEspecialidad() const;
@@ -81,8 +83,8 @@ private:
     static constexpr double kMargenCorriente = 60.0;
     static constexpr double kDuracionMacho = 10.0;
     static constexpr double kDuracionCresta = 8.0;
-    static constexpr int kCapacidad = 5;
-    static constexpr int kEsquivesParaCresta = 3;
+    static constexpr int kCapacidad = 6;
+    static constexpr double kVida = 100.0;
 
     Modo m_modo;
     QPointF m_tamanoBase;
@@ -94,10 +96,10 @@ private:
     bool m_enSuelo;
     double m_mu;
     int m_cocos;
-    int m_combo;
     Especialidad m_especialidad;
     double m_tiempoEspecialidad;
     double m_factorVelocidad, m_factorSalto, m_factorFriccion, m_factorDano, m_factorAlcance;
+    double m_escala;
 
     void moverCenital(double dt);
     void moverPlataforma(double dt);

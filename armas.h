@@ -4,7 +4,7 @@
 #include "elementodebatalla.h"
 #include <stdexcept>
 
-enum class TipoProyectil { Coco, Piedra, BalaDeCanon };
+enum class TipoProyectil { Coco, Piedra, BalaDeCanon, Cohete };  // Cohete = bazuca de Abelardo
 enum class ModoVista { Cenital, Lateral };
 
 class Armas : public ElementoDeBatalla {
@@ -21,6 +21,7 @@ private:
     bool m_aterrizo;
     QPointF m_destino;
     bool m_tieneDestino;
+    bool m_recto;  // true: vuela en linea recta (sin gravedad), como las balas de soldados y los cohetes
 
 public:
     Armas(const QPointF& pos, const QPointF& vel, double dano, int rebotes, double tiempoVida,
@@ -35,8 +36,14 @@ public:
 
     void actualizar(double dt) override;
     QString rutaSprite() const override;
+    bool espejar() const override;
+    double rotacion() const override;
+    bool esEnemiga() const;      // bala de canon o cohete: hacen dano a German
+    QRectF areaImpacto() const;  // zona pequena alrededor de la posicion (sin la estela del sprite)
 
     void apuntar(const QPointF& origen, const QPointF& destino, double tiempoVuelo);
+    // Vista lateral: sale hacia el destino en linea recta y sigue de largo si no choca.
+    void apuntarDirecto(const QPointF& origen, const QPointF& destino, double tiempoHastaDestino);
     void rebotar(const QPointF& normal);
     bool haExpirado() const;
     void reiniciar(const QPointF& pos, const QPointF& vel, double dano, int rebotes,
@@ -67,6 +74,7 @@ public:
     void setDestino(const QPointF& destino);
     bool tieneDestino() const;
     void setTieneDestino(bool tiene);
+    bool esRecto() const;
 };
 
 #endif // ARMAS_H

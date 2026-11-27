@@ -6,7 +6,14 @@
 
 enum class TipoObjeto {
     TroncoFlotante, TrampaPendulo, PlataformaMovil, BarrilExplosivo, PastelDeYuca,
-    Roca, CocoEnSuelo
+    Roca, CocoEnSuelo, AguaPanela,
+    Efecto  // decoracion temporal: crater, impacto, explosion, salpicadura (ver TipoEfecto)
+};
+
+// Cual de los sprites de efecto se muestra (se guarda en la "variante" del objeto).
+enum class TipoEfecto {
+    BalaImpacto, Explosion, CocoRompe, CocoAgua, Humo, Polvo,
+    CraterPasto, CraterTierra, CraterPiedra, CoheteExplosion, Chispa  // Chispa: golpe de la demoledora
 };
 
 class ObjetoDelEscenario : public ElementoDeBatalla {
@@ -21,6 +28,8 @@ private:
     double m_longitudCuerda;
     QPointF m_posicionBase;
     double m_tiempoAcumulado;
+    int m_variante;  // que version del sprite usa (plataformas, cajas, rocas, troncos, efectos)
+    double m_duracion;  // efectos: segundos que viven (0 = para siempre)
 
     void configurarSegunTipo();
 
@@ -37,6 +46,9 @@ public:
 
     void actualizar(double dt) override;
     QString rutaSprite() const override;
+    double opacidad() const override;
+    double superficieY() const;  // plataformas: y de la superficie donde se pisa (el sprite tiene plantas encima)
+    void reiniciarEfecto(TipoEfecto efecto, const QPointF& pos, const QPointF& tam, double duracion);
     void explotar();
     void recoger();
 
@@ -60,6 +72,9 @@ public:
     void setPosicionBase(const QPointF& pos);
     double tiempoAcumulado() const;
     void setTiempoAcumulado(double t);
+    int variante() const;
+    void setVariante(int variante);
+    double duracion() const;
 };
 
 #endif // OBJETODELESCENARIO_H
